@@ -1,0 +1,117 @@
+{
+  "manifest_version": "0.3",
+  "name": "claude-model-proxy",
+  "display_name": "Claude Model Proxy",
+  "version": "0.1.0",
+  "description": "Runs a local proxy that routes Claude gateway model names to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, and Anthropic upstreams.",
+  "long_description": "Starts a local HTTP proxy for Claude Desktop gateway. Requests are routed by model name: claude-deepseek-v4-flash maps to deepseek-v4-flash on DeepSeek, claude-deepseek-v4-pro maps to deepseek-v4-pro on DeepSeek, claude-kimi-k2.6 maps to kimi-k2.6 on Moonshot/Kimi, claude-glm-* aliases use actual Z.AI GLM model names, claude-mimo-* aliases use actual Xiaomi MiMo model names, claude-gpt-* aliases use OpenAI Chat Completions, claude-gemini-* aliases use Gemini's OpenAI-compatible API, and original Claude model names use Anthropic Messages. The installer focuses on gateway, DeepSeek, and Moonshot/Kimi settings; optional providers and mapping overrides can be supplied as advanced JSON.",
+  "author": {
+    "name": "Local"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.mjs"
+      ],
+      "env": {
+        "BASE_URL": "${user_config.base_url}",
+        "PORT": "${user_config.port}",
+        "DEEPSEEK_BASE_URL": "${user_config.deepseek_base_url}",
+        "DEEPSEEK_API_KEY": "${user_config.deepseek_api_key}",
+        "MOONSHOT_BASE_URL": "${user_config.moonshot_base_url}",
+        "MOONSHOT_API_KEY": "${user_config.moonshot_api_key}",
+        "ADVANCED_ENV": "${user_config.advanced_env}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "model_proxy_status",
+      "description": "Shows whether the local model-name proxy is running and how models are routed."
+    }
+  ],
+  "keywords": [
+    "claude",
+    "deepseek",
+    "kimi",
+    "moonshot",
+    "glm",
+    "zai",
+    "zhipu",
+    "xiaomi",
+    "mimo",
+    "openai",
+    "gpt",
+    "gemini",
+    "google",
+    "anthropic",
+    "gateway",
+    "proxy",
+    "model"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "base_url": {
+      "type": "string",
+      "title": "Gateway Base URL",
+      "description": "The reachable URL configured in Claude Desktop gateway. Use the local loopback URL unless you separately configure DNS and TLS for a custom domain.",
+      "default": "http://127.0.0.1:8787",
+      "required": true
+    },
+    "port": {
+      "type": "number",
+      "title": "Local Proxy Port",
+      "description": "Local port used by the extension's HTTP proxy.",
+      "default": 8787,
+      "min": 1024,
+      "max": 65535,
+      "required": true
+    },
+    "deepseek_base_url": {
+      "type": "string",
+      "title": "DeepSeek Base URL",
+      "description": "DeepSeek-compatible API base URL.",
+      "default": "https://api.deepseek.com/anthropic",
+      "required": true
+    },
+    "deepseek_api_key": {
+      "type": "string",
+      "title": "DeepSeek API Key",
+      "description": "DEEPSEEK_API_KEY. Sent only to DeepSeek as Authorization: Bearer ...",
+      "sensitive": true,
+      "required": true
+    },
+    "moonshot_base_url": {
+      "type": "string",
+      "title": "Moonshot Base URL",
+      "description": "Moonshot/Kimi-compatible API base URL.",
+      "default": "https://api.moonshot.cn/anthropic",
+      "required": true
+    },
+    "moonshot_api_key": {
+      "type": "string",
+      "title": "Moonshot API Key",
+      "description": "MOONSHOT_API_KEY. Sent only to Moonshot/Kimi as Authorization: Bearer ...",
+      "sensitive": true,
+      "required": true
+    },
+    "advanced_env": {
+      "type": "string",
+      "title": "Optional Advanced Settings JSON",
+      "description": "Optional JSON object for less common provider keys and overrides, for example {\"GLM_API_KEY\":\"...\",\"XIAOMI_API_KEY\":\"...\",\"ANTHROPIC_API_KEY\":\"sk-ant-...\",\"OPENAI_API_KEY\":\"sk-...\",\"GEMINI_API_KEY\":\"...\"}.",
+      "default": "{}",
+      "required": false
+    }
+  }
+}

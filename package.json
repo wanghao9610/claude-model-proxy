@@ -1,0 +1,32 @@
+{
+  "name": "claude-model-proxy",
+  "version": "0.1.0",
+  "description": "Local Claude Desktop gateway proxy that routes Claude-style model names to multiple upstream providers.",
+  "private": true,
+  "type": "module",
+  "keywords": [
+    "claude",
+    "claude-desktop",
+    "mcpb",
+    "gateway",
+    "proxy",
+    "deepseek",
+    "kimi",
+    "moonshot",
+    "glm",
+    "mimo",
+    "openai",
+    "gemini",
+    "anthropic"
+  ],
+  "scripts": {
+    "build:mcpb": "node scripts/build-mcpb.mjs",
+    "launch-agent:install": "node scripts/install-launch-agent.mjs",
+    "launch-agent:uninstall": "node scripts/uninstall-launch-agent.mjs",
+    "start": "node proxy.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
