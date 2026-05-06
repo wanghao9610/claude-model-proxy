@@ -202,6 +202,26 @@ gateway URL, local port, DeepSeek credentials, and Moonshot/Kimi credentials.
 Optional providers and mapping overrides can be supplied through the advanced
 JSON field.
 
+After the extension is installed, open Claude Desktop settings and configure
+third-party inference as shown below. If the third-party inference or extension
+controls are hidden, enable Developer Mode first.
+
+![Claude Desktop gateway settings](srcs/claude-developer-mode.png)
+
+Use these values:
+
+- Provider: `Gateway`
+- Gateway base URL: `http://127.0.0.1:8787`
+- Gateway API key: any non-empty placeholder, for example
+  `sk-claud-model-proxy`
+- Gateway auth scheme: `bearer`
+- Model list: add the Claude-style request model names you want to expose, such
+  as `claude-deepseek-v4-flash`, `claude-deepseek-v4-pro`, and
+  `claude-kimi-k2.6`
+
+Provider API keys are configured in the extension installer or environment
+variables, not in the Gateway API key field.
+
 The extension exposes a `model_proxy_status` tool so you can inspect local proxy
 status, providers, and model mappings from Claude.
 
@@ -213,6 +233,7 @@ status, providers, and model mappings from Claude.
 ├── proxy.mjs                  # HTTP gateway proxy and provider adapters
 ├── server/index.mjs           # MCP stdio server that starts the proxy
 ├── scripts/                   # Build, launchd, and Node helper scripts
+├── srcs/                      # README screenshots and images
 ├── test/proxy.test.mjs        # Node test suite
 ├── start.sh                   # Standalone launcher
 └── .env.example               # Safe local configuration template
