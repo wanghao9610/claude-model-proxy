@@ -221,6 +221,29 @@ variables, not in the Gateway API key field.
 The extension exposes a `model_proxy_status` tool so you can inspect local proxy
 status, providers, and model mappings from Claude.
 
+In Claude Desktop settings, this appears under Tool permissions as
+`Other tools -> Model proxy status`. If its permission is `Needs approval`,
+Claude will ask before each tool call. In a Claude chat, ask:
+
+```text
+Use the Model proxy status tool to check whether Claude Model Proxy is running.
+```
+
+or:
+
+```text
+Call model_proxy_status and tell me whether the proxy is listening and whether
+API keys are configured.
+```
+
+The returned JSON includes `listening`, `error`, `external`, `localUrl`,
+provider `hasApiKey` flags, and the active model mappings. You can also inspect
+similar status from a terminal:
+
+```sh
+curl http://127.0.0.1:8787/healthz
+```
+
 ## Avoid the startup warning
 
 Claude Desktop can probe the gateway before the MCPB extension process has

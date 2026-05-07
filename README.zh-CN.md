@@ -192,6 +192,27 @@ Advanced settings -> Install Extension，安装该 `.mcpb` 文件。首次安装
 插件还提供 `model_proxy_status` 工具，可在 Claude 中查看代理状态、provider
 配置和模型映射。
 
+在 Claude Desktop 设置里，它会显示在 Tool permissions 的
+`Other tools -> Model proxy status` 下。如果权限是 `Needs approval`，Claude
+每次调用前都会请求确认。在 Claude 对话中可以直接输入：
+
+```text
+请使用 Model proxy status 工具检查 Claude Model Proxy 是否正在运行。
+```
+
+或：
+
+```text
+调用 model_proxy_status，告诉我代理是否正在监听，以及 API key 是否已配置。
+```
+
+返回的 JSON 里重点看 `listening`、`error`、`external`、`localUrl`、
+provider 的 `hasApiKey`，以及当前模型映射。也可以在终端检查类似状态：
+
+```sh
+curl http://127.0.0.1:8787/healthz
+```
+
 ## 避免启动时 Gateway 不可达提示
 
 Claude Desktop 启动时可能先探测 Gateway，此时 MCPB 插件进程还没完成启动，
