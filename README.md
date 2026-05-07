@@ -4,30 +4,31 @@ Claude Desktop can point its gateway at this proxy while requests are routed by
 model name to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, or
 Anthropic upstreams. The default mappings are:
 
-| Request model | Claude response alias | Upstream provider | Upstream model |
-| --- | --- | --- | --- |
-| `claude-haiku-4-5` | `claude-haiku-4-5` | Anthropic | `claude-haiku-4-5` |
-| `claude-sonnet-4-6` | `claude-sonnet-4-6` | Anthropic | `claude-sonnet-4-6` |
-| `claude-opus-4-7` | `claude-opus-4-7` | Anthropic | `claude-opus-4-7` |
-| `claude-deepseek-v4-flash` | `claude-deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
-| `claude-deepseek-v4-pro` | `claude-deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
-| `claude-kimi-k2.6` | `claude-kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
-| `claude-glm-4.5-air` | `claude-glm-4.5-air` | GLM | `glm-4.5-air` |
-| `claude-glm-4.7` | `claude-glm-4.7` | GLM | `glm-4.7` |
-| `claude-glm-5.1` | `claude-glm-5.1` | GLM | `glm-5.1` |
-| `claude-mimo-v2-flash` | `claude-mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
-| `claude-mimo-v2-pro` | `claude-mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
-| `claude-mimo-v2.5-pro` | `claude-mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
-| `claude-gpt-5.4-mini` | `claude-gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
-| `claude-gpt-5.4` | `claude-gpt-5.4` | OpenAI | `gpt-5.4` |
-| `claude-gpt-5.5` | `claude-gpt-5.5` | OpenAI | `gpt-5.5` |
-| `claude-gemini-3.1-flash-lite-preview` | `claude-gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
-| `claude-gemini-3-flash-preview` | `claude-gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
-| `claude-gemini-3.1-pro-preview` | `claude-gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
+| Claude model | Upstream provider | Upstream model |
+| --- | --- | --- |
+| `claude-haiku-4-5` | Anthropic | `claude-haiku-4-5` |
+| `claude-sonnet-4-6` | Anthropic | `claude-sonnet-4-6` |
+| `claude-opus-4-7` | Anthropic | `claude-opus-4-7` |
+| `claude-deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
+| `claude-deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
+| `claude-kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
+| `claude-glm-4.5-air` | GLM | `glm-4.5-air` |
+| `claude-glm-4.7` | GLM | `glm-4.7` |
+| `claude-glm-5.1` | GLM | `glm-5.1` |
+| `claude-mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
+| `claude-mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
+| `claude-mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
+| `claude-gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
+| `claude-gpt-5.4` | OpenAI | `gpt-5.4` |
+| `claude-gpt-5.5` | OpenAI | `gpt-5.5` |
+| `claude-gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
+| `claude-gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
+| `claude-gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
 
-When multiple request aliases share one upstream model, responses are rewritten
-back to the request alias used for that call.
-Provider aliases use `claude-` plus the actual upstream model name. The original
+The `Claude model` value is both the request model and the default response
+alias. When multiple request aliases share one upstream model, responses are
+rewritten back to the request alias used for that call. Provider aliases use
+`claude-` plus the actual upstream model name. The original
 Claude model names `claude-haiku-4-5`, `claude-sonnet-4-6`, and
 `claude-opus-4-7` are sent to the Anthropic provider directly. OpenAI models and Gemini models are not supported by the Anthropic provider.
 
