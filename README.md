@@ -67,6 +67,16 @@ export GEMINI_API_KEY="..."
 ./start.sh
 ```
 
+`start.sh` starts the proxy in the background by default and writes
+`claude-model-proxy.pid` plus `claude-model-proxy.log`. Common commands:
+
+```sh
+./start.sh status
+./start.sh stop
+./start.sh restart
+./start.sh foreground
+```
+
 Set `CLAUDE_MODEL_PROXY_AUTO_INSTALL_NODE=0` before running `./start.sh` to
 disable automatic Homebrew install attempts.
 

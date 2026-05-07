@@ -61,6 +61,16 @@ export GEMINI_API_KEY="..."
 ./start.sh
 ```
 
+`start.sh` 默认在后台启动代理，并写入 `claude-model-proxy.pid` 和
+`claude-model-proxy.log`。常用命令：
+
+```sh
+./start.sh status
+./start.sh stop
+./start.sh restart
+./start.sh foreground
+```
+
 `start.sh` 会优先使用系统默认的 `node`。如果 macOS 上没有 Node.js 18+ 且已
 安装 Homebrew，它会尝试执行 `brew install node`。如需关闭自动安装尝试：
 

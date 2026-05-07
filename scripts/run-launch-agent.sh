@@ -12,4 +12,5 @@ if [ -f "$ENV_FILE" ]; then
   set +a
 fi
 
+export CLAUDE_MODEL_PROXY_FOREGROUND=1
 exec "$ROOT_DIR/start.sh"
