@@ -597,6 +597,32 @@ test('manifest keeps installer config focused on DeepSeek and Moonshot', () => {
   ]);
 });
 
+test('serves configured model list for Claude Code and SDK discovery', async (t) => {
+  const proxy = createProxyServer(createTestConfig({}));
+
+  await listen(proxy);
+  t.after(() => close(proxy));
+
+  const modelsResponse = await getJson(`http://127.0.0.1:${proxy.address().port}/v1/models`);
+  assert.equal(modelsResponse.statusCode, 200);
+  assert.equal(modelsResponse.body.has_more, false);
+  assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'claude-deepseek-v4-pro'),
+    true,
+  );
+  assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'claude-kimi-k2.6'),
+    true,
+  );
+
+  const modelResponse = await getJson(
+    `http://127.0.0.1:${proxy.address().port}/v1/models/claude-deepseek-v4-pro`,
+  );
+  assert.equal(modelResponse.statusCode, 200);
+  assert.equal(modelResponse.body.id, 'claude-deepseek-v4-pro');
+  assert.equal(modelResponse.body.type, 'model');
+});
+
 test('uses Anthropic-compatible provider base URLs by default', () => {
   const config = loadConfig({});
 
@@ -738,6 +764,28 @@ function postJson(url, payload) {
 
     req.on('error', reject);
     req.end(body);
+  });
+}
+
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+      },
+    }, async (res) => {
+      const text = await readBody(res);
+      const contentType = String(res.headers['content-type'] || '');
+      resolve({
+        statusCode: res.statusCode,
+        text,
+        body: contentType.includes('application/json') ? JSON.parse(text) : null,
+      });
+    });
+
+    req.on('error', reject);
+    req.end();
   });
 }
 

@@ -9,6 +9,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.claude-code.example
 .claude-model-proxy.env
 *.local
 

@@ -182,6 +182,49 @@ MODEL_ROUTES='{"deepseek-v4-flash":"deepseek","deepseek-v4-pro":"deepseek","kimi
 curl http://127.0.0.1:8787/healthz
 ```
 
+## Claude Code
+
+Claude Code can use this proxy through its Anthropic-compatible environment
+variables. Start the proxy first, then source the Claude Code client environment
+in the terminal where you run `claude`:
+
+```sh
+cp .env.claude-code.example .env.claude-code
+# Edit .env.claude-code if you want different model aliases.
+set -a
+. ./.env.claude-code
+set +a
+claude
+```
+
+The default Claude Code example maps its aliases to these proxy models:
+
+```sh
+ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-deepseek-v4-flash
+ANTHROPIC_DEFAULT_SONNET_MODEL=claude-deepseek-v4-pro
+ANTHROPIC_DEFAULT_OPUS_MODEL=claude-kimi-k2.6
+CLAUDE_CODE_SUBAGENT_MODEL=claude-deepseek-v4-flash
+ANTHROPIC_MODEL=sonnet
+```
+
+You can also start Claude Code with a specific proxy model directly:
+
+```sh
+ANTHROPIC_BASE_URL=http://127.0.0.1:8787 \
+ANTHROPIC_API_KEY=sk-claude-model-proxy \
+claude --model claude-deepseek-v4-pro
+```
+
+`ANTHROPIC_API_KEY` is only a non-empty client-side placeholder for this proxy.
+Provider API keys still come from the proxy's `.env`, MCPB install settings, or
+LaunchAgent environment file.
+
+Claude Code works best with Anthropic Messages-compatible upstreams such as
+DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, and Anthropic because tool-use
+payloads are passed through as-is. OpenAI and Gemini routes use a basic
+Chat Completions adapter for text/image and streaming responses; they are not a
+full Claude Code tool-use compatibility layer.
+
 ## Claude Desktop extension
 
 Build the installable MCPB extension:
@@ -236,6 +279,7 @@ status, providers, and model mappings from Claude.
 ├── srcs/                      # README screenshots and images
 ├── test/proxy.test.mjs        # Node test suite
 ├── start.sh                   # Standalone launcher
+├── .env.claude-code.example   # Claude Code client configuration template
 └── .env.example               # Safe local configuration template
 ```
 

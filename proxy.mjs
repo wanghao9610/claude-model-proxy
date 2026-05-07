@@ -239,6 +239,11 @@ export function createProxyServer(config = loadConfig()) {
         return;
       }
 
+      if (clientReq.method === 'GET' && isModelsRequest(clientReq.url)) {
+        handleModelsRequest(clientReq, clientRes, normalizedConfig);
+        return;
+      }
+
       const rawBody = await readRequestBody(
         clientReq,
         normalizedConfig.requestBodyLimitBytes,
@@ -270,6 +275,47 @@ export function createProxyServer(config = loadConfig()) {
       });
     }
   });
+}
+
+function isModelsRequest(rawUrl = '/') {
+  const pathname = new URL(rawUrl, 'http://127.0.0.1').pathname;
+  return pathname === '/v1/models' || pathname.startsWith('/v1/models/');
+}
+
+function handleModelsRequest(req, res, config) {
+  const pathname = new URL(req.url || '/', 'http://127.0.0.1').pathname;
+  const models = listConfiguredModels(config);
+
+  if (pathname === '/v1/models') {
+    sendJson(res, 200, {
+      data: models,
+      first_id: models[0]?.id || null,
+      has_more: false,
+      last_id: models.at(-1)?.id || null,
+    });
+    return;
+  }
+
+  const modelId = decodeURIComponent(pathname.slice('/v1/models/'.length));
+  const model = models.find((item) => item.id === modelId);
+  if (!model) {
+    sendJson(res, 404, {
+      error: `Unknown model: ${modelId}`,
+    });
+    return;
+  }
+
+  sendJson(res, 200, model);
+}
+
+function listConfiguredModels(config) {
+  return Object.keys(config.modelMap)
+    .sort()
+    .map((id) => ({
+      id,
+      type: 'model',
+      display_name: id,
+    }));
 }
 
 function prepareRequest(rawBody, contentType, config) {
