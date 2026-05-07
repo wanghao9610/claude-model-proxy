@@ -79,56 +79,6 @@ Configure the gateway base URL as:
 http://127.0.0.1:8787
 ```
 
-## Avoid the startup warning
-
-Claude Desktop can probe the gateway before the MCPB extension process has
-finished starting. When that happens, Claude shows "Can't reach 127.0.0.1:8787"
-until you click "Check again".
-
-For a clean startup, run the proxy as a macOS LaunchAgent so it is already
-listening before Claude starts:
-
-```sh
-npm run launch-agent:install
-```
-
-The installer creates `~/.claude-model-proxy.env`. Put the same provider keys in
-that file, then restart the agent:
-
-```sh
-launchctl kickstart -k gui/$(id -u)/local.claude-model-proxy
-curl http://127.0.0.1:8787/healthz
-```
-
-The MCPB extension can still stay installed. If it sees the LaunchAgent already
-owning port `8787`, its status reports the proxy as externally running instead
-of treating the port conflict as a failure.
-
-To remove the LaunchAgent:
-
-```sh
-npm run launch-agent:uninstall
-```
-
-## Extension install UI
-
-The MCPB installer shows only the gateway/proxy basics plus DeepSeek and
-Moonshot/Kimi credentials by default. Less common provider credentials and
-mapping overrides stay available through one optional advanced JSON field:
-
-```json
-{
-  "GLM_API_KEY": "...",
-  "XIAOMI_API_KEY": "...",
-  "ANTHROPIC_API_KEY": "sk-ant-...",
-  "OPENAI_API_KEY": "sk-...",
-  "GEMINI_API_KEY": "..."
-}
-```
-
-The advanced field accepts any environment variable listed below, including
-`MODEL_MAP`, `MODEL_ALIASES`, `MODEL_ROUTES`, and `REWRITE_RESPONSES`.
-
 ## Configuration
 
 Environment variables:
@@ -267,6 +217,56 @@ variables, not in the Gateway API key field.
 
 The extension exposes a `model_proxy_status` tool so you can inspect local proxy
 status, providers, and model mappings from Claude.
+
+## Avoid the startup warning
+
+Claude Desktop can probe the gateway before the MCPB extension process has
+finished starting. When that happens, Claude shows "Can't reach 127.0.0.1:8787"
+until you click "Check again".
+
+For a clean startup, run the proxy as a macOS LaunchAgent so it is already
+listening before Claude starts:
+
+```sh
+npm run launch-agent:install
+```
+
+The installer creates `~/.claude-model-proxy.env`. Put the same provider keys in
+that file, then restart the agent:
+
+```sh
+launchctl kickstart -k gui/$(id -u)/local.claude-model-proxy
+curl http://127.0.0.1:8787/healthz
+```
+
+The MCPB extension can still stay installed. If it sees the LaunchAgent already
+owning port `8787`, its status reports the proxy as externally running instead
+of treating the port conflict as a failure.
+
+To remove the LaunchAgent:
+
+```sh
+npm run launch-agent:uninstall
+```
+
+## Extension install UI
+
+The MCPB installer shows only the gateway/proxy basics plus DeepSeek and
+Moonshot/Kimi credentials by default. Less common provider credentials and
+mapping overrides stay available through one optional advanced JSON field:
+
+```json
+{
+  "GLM_API_KEY": "...",
+  "XIAOMI_API_KEY": "...",
+  "ANTHROPIC_API_KEY": "sk-ant-...",
+  "OPENAI_API_KEY": "sk-...",
+  "GEMINI_API_KEY": "..."
+}
+```
+
+The advanced field accepts any environment variable listed below, including
+`MODEL_MAP`, `MODEL_ALIASES`, `MODEL_ROUTES`, and `REWRITE_RESPONSES`.
 
 ## Project layout
 
