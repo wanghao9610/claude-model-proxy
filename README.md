@@ -1,5 +1,7 @@
 # Claude model proxy
 
+[中文文档](README.zh-CN.md)
+
 Claude Desktop can point its gateway at this proxy while requests are routed by
 model name to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, or
 Anthropic upstreams. The default mappings are:
@@ -162,7 +164,7 @@ You can also start Claude Code with a specific proxy model directly:
 
 ```sh
 ANTHROPIC_BASE_URL=http://127.0.0.1:8787 \
-ANTHROPIC_API_KEY=sk-claude-model-proxy \
+ANTHROPIC_API_KEY=dummy-claude-model-proxy \
 claude --model claude-deepseek-v4-pro
 ```
 
@@ -207,7 +209,7 @@ Use these values:
 - Provider: `Gateway`
 - Gateway base URL: `http://127.0.0.1:8787`
 - Gateway API key: any non-empty placeholder, for example
-  `sk-claud-model-proxy`
+  `dummy-claude-model-proxy`
 - Gateway auth scheme: `bearer`
 - Model list: add the Claude-style request model names you want to expose, such
   as `claude-deepseek-v4-flash`, `claude-deepseek-v4-pro`, and

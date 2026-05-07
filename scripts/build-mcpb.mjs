@@ -16,10 +16,12 @@ await fs.rm(path.join(distDir, 'claude-deepseek-model-proxy'), { recursive: true
 await fs.rm(path.join(distDir, 'claude-deepseek-model-proxy-0.1.0.mcpb'), { force: true });
 await fs.mkdir(path.join(stagingDir, 'server'), { recursive: true });
 await fs.mkdir(path.join(stagingDir, 'scripts'), { recursive: true });
+await fs.mkdir(path.join(stagingDir, 'srcs'), { recursive: true });
 
 await copyFile('manifest.json', 'manifest.json');
 await copyFile('proxy.mjs', 'proxy.mjs');
 await copyFile('README.md', 'README.md');
+await copyFile('README.zh-CN.md', 'README.zh-CN.md');
 await copyFile('package.json', 'package.json');
 await copyFile('start.sh', 'start.sh');
 await copyFile('server/index.mjs', 'server/index.mjs');
@@ -27,6 +29,7 @@ await copyFile('scripts/ensure-node.sh', 'scripts/ensure-node.sh');
 await copyFile('scripts/install-launch-agent.mjs', 'scripts/install-launch-agent.mjs');
 await copyFile('scripts/run-launch-agent.sh', 'scripts/run-launch-agent.sh');
 await copyFile('scripts/uninstall-launch-agent.mjs', 'scripts/uninstall-launch-agent.mjs');
+await copyFile('srcs/claude-developer-mode.png', 'srcs/claude-developer-mode.png');
 
 await fs.rm(outputFile, { force: true });
 
