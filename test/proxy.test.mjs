@@ -428,6 +428,64 @@ test('routes Gemini OpenAI-compatible requests with Gemini API key', async (t) =
   assert.equal(response.body.model, 'claude-gemini-3.1-pro-preview');
 });
 
+test('routes Qwen OpenAI-compatible requests with DashScope API key', async (t) => {
+  let upstreamPath;
+  let upstreamAuthorization;
+  let upstreamBody;
+
+  const qwen = http.createServer(async (req, res) => {
+    upstreamPath = req.url;
+    upstreamAuthorization = req.headers.authorization;
+    upstreamBody = await readBody(req);
+
+    res.writeHead(200, {
+      'content-type': 'application/json',
+    });
+    res.end(JSON.stringify({
+      id: 'chatcmpl_qwen',
+      model: 'qwen-plus',
+      choices: [
+        {
+          finish_reason: 'stop',
+          message: {
+            role: 'assistant',
+            content: 'qwen ok',
+          },
+        },
+      ],
+    }));
+  });
+
+  await listen(qwen);
+  t.after(() => close(qwen));
+
+  const proxy = createProxyServer(createTestConfig({
+    qwenBaseUrl: `http://127.0.0.1:${qwen.address().port}/compatible-mode/v1`,
+  }));
+
+  await listen(proxy);
+  t.after(() => close(proxy));
+
+  const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
+    model: 'claude-qwen-plus',
+    max_tokens: 64,
+    messages: [
+      {
+        role: 'user',
+        content: 'hello',
+      },
+    ],
+  });
+
+  const parsedUpstreamBody = JSON.parse(upstreamBody);
+  assert.equal(upstreamPath, '/compatible-mode/v1/chat/completions');
+  assert.equal(upstreamAuthorization, 'Bearer qwen-test-key');
+  assert.equal(parsedUpstreamBody.model, 'qwen-plus');
+  assert.equal(parsedUpstreamBody.max_tokens, 64);
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.model, 'claude-qwen-plus');
+});
+
 test('routes Anthropic Claude models with x-api-key auth', async (t) => {
   let upstreamAuthorization;
   let upstreamApiKey;
@@ -534,6 +592,8 @@ test('loads separate provider API keys from install environment', () => {
     OPENAI_API_KEY: 'openai-install-key',
     GEMINI_BASE_URL: 'https://gemini.example/openai',
     GEMINI_API_KEY: 'gemini-install-key',
+    QWEN_BASE_URL: 'https://dashscope.example/compatible-mode/v1',
+    DASHSCOPE_API_KEY: 'dashscope-install-key',
     ANTHROPIC_BASE_URL: 'https://anthropic.example',
     ANTHROPIC_API_KEY: 'anthropic-install-key',
   });
@@ -542,11 +602,13 @@ test('loads separate provider API keys from install environment', () => {
   assert.equal(config.providers.moonshot.upstreamApiKey, 'moonshot-install-key');
   assert.equal(config.providers.openai.upstreamApiKey, 'openai-install-key');
   assert.equal(config.providers.gemini.upstreamApiKey, 'gemini-install-key');
+  assert.equal(config.providers.qwen.upstreamApiKey, 'dashscope-install-key');
   assert.equal(config.providers.anthropic.upstreamApiKey, 'anthropic-install-key');
   assert.equal(config.providers.deepseek.upstreamBaseUrl.href, 'https://deepseek.example/');
   assert.equal(config.providers.moonshot.upstreamBaseUrl.href, 'https://moonshot.example/v1');
   assert.equal(config.providers.openai.upstreamBaseUrl.href, 'https://openai.example/v1');
   assert.equal(config.providers.gemini.upstreamBaseUrl.href, 'https://gemini.example/openai');
+  assert.equal(config.providers.qwen.upstreamBaseUrl.href, 'https://dashscope.example/compatible-mode/v1');
   assert.equal(config.providers.anthropic.upstreamBaseUrl.href, 'https://anthropic.example/');
 });
 
@@ -556,6 +618,7 @@ test('loads hidden optional provider config from advanced env JSON', () => {
       OPENAI_BASE_URL: 'https://openai.advanced/v1',
       OPENAI_API_KEY: 'openai-advanced-key',
       GEMINI_API_KEY: 'gemini-advanced-key',
+      QWEN_API_KEY: 'qwen-advanced-key',
       GLM_API_KEY: 'glm-advanced-key',
       MODEL_MAP: '{"claude-custom-gpt":"custom-gpt"}',
       MODEL_ROUTES: '{"custom-gpt":"openai"}',
@@ -566,6 +629,7 @@ test('loads hidden optional provider config from advanced env JSON', () => {
   assert.equal(config.providers.openai.upstreamBaseUrl.href, 'https://openai.advanced/v1');
   assert.equal(config.providers.openai.upstreamApiKey, 'openai-advanced-key');
   assert.equal(config.providers.gemini.upstreamApiKey, 'gemini-advanced-key');
+  assert.equal(config.providers.qwen.upstreamApiKey, 'qwen-advanced-key');
   assert.equal(config.providers.glm.upstreamApiKey, 'glm-advanced-key');
   assert.equal(config.modelMap['claude-custom-gpt'], 'custom-gpt');
   assert.equal(config.modelRoutes['custom-gpt'], 'openai');
@@ -576,7 +640,11 @@ test('manifest keeps installer config focused on DeepSeek and Moonshot', () => {
   const testDir = path.dirname(fileURLToPath(import.meta.url));
   const rootDir = path.resolve(testDir, '..');
   const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'manifest.json'), 'utf8'));
+  const packageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+  const serverSource = fs.readFileSync(path.join(rootDir, 'server/index.mjs'), 'utf8');
 
+  assert.equal(manifest.version, packageJson.version);
+  assert.match(serverSource, new RegExp(`const SERVER_VERSION = '${manifest.version}'`));
   assert.deepEqual(Object.keys(manifest.user_config), [
     'base_url',
     'port',
@@ -595,6 +663,37 @@ test('manifest keeps installer config focused on DeepSeek and Moonshot', () => {
     'MOONSHOT_API_KEY',
     'ADVANCED_ENV',
   ]);
+  assert.equal(manifest.tools_generated, false);
+  assert.deepEqual(manifest.tools, [
+    {
+      name: 'model_proxy_status',
+      description: 'Shows whether the local model-name proxy is running and how models are routed.',
+    },
+  ]);
+
+  const staticResponses = manifest._meta['com.microsoft.windows'].static_responses;
+  assert.deepEqual(staticResponses.initialize.capabilities, { tools: {} });
+  assert.equal(staticResponses.initialize.serverInfo.name, 'claude-model-proxy');
+  assert.equal(staticResponses.initialize.serverInfo.version, manifest.version);
+  assert.deepEqual(staticResponses['tools/list'].tools, [
+    {
+      name: 'model_proxy_status',
+      title: 'Model proxy status',
+      description: 'Shows local proxy status, upstream providers, and model mappings.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: {
+        title: 'Model proxy status',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+  ]);
 });
 
 test('serves configured model list for Claude Code and SDK discovery', async (t) => {
@@ -612,6 +711,10 @@ test('serves configured model list for Claude Code and SDK discovery', async (t)
   );
   assert.equal(
     modelsResponse.body.data.some((model) => model.id === 'claude-kimi-k2.6'),
+    true,
+  );
+  assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'claude-qwen-max'),
     true,
   );
 
@@ -653,6 +756,11 @@ test('uses Anthropic-compatible provider base URLs by default', () => {
   );
   assert.equal(config.providers.gemini.format, 'openai-chat');
   assert.equal(
+    config.providers.qwen.upstreamBaseUrl.href,
+    'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  );
+  assert.equal(config.providers.qwen.format, 'openai-chat');
+  assert.equal(
     config.providers.anthropic.upstreamBaseUrl.href,
     'https://api.anthropic.com/',
   );
@@ -672,6 +780,20 @@ test('uses Anthropic-compatible provider base URLs by default', () => {
   assert.equal(config.modelMap['claude-gpt-5.5'], 'gpt-5.5');
   assert.equal(config.modelMap['claude-gpt-5.4'], 'gpt-5.4');
   assert.equal(config.modelMap['claude-gpt-5.4-mini'], 'gpt-5.4-mini');
+  assert.deepEqual(
+    Object.entries(config.modelRoutes)
+      .filter(([, provider]) => provider === 'qwen')
+      .map(([model]) => model)
+      .sort(),
+    [
+      'qwen-flash',
+      'qwen-max',
+      'qwen-plus',
+    ],
+  );
+  assert.equal(config.modelMap['claude-qwen-flash'], 'qwen-flash');
+  assert.equal(config.modelMap['claude-qwen-plus'], 'qwen-plus');
+  assert.equal(config.modelMap['claude-qwen-max'], 'qwen-max');
 });
 
 function createTestConfig({
@@ -681,7 +803,8 @@ function createTestConfig({
   xiaomiBaseUrl = 'http://127.0.0.1:4',
   openaiBaseUrl = 'http://127.0.0.1:5/v1',
   geminiBaseUrl = 'http://127.0.0.1:6/v1beta/openai',
-  anthropicBaseUrl = 'http://127.0.0.1:7',
+  qwenBaseUrl = 'http://127.0.0.1:7/compatible-mode/v1',
+  anthropicBaseUrl = 'http://127.0.0.1:8',
 }) {
   return {
     baseUrl: 'https://127.0.0.1:8787',
@@ -713,6 +836,13 @@ function createTestConfig({
       gemini: {
         upstreamBaseUrl: new URL(geminiBaseUrl),
         upstreamApiKey: 'gemini-test-key',
+        format: 'openai-chat',
+        authScheme: 'bearer',
+        maxTokensField: 'max_tokens',
+      },
+      qwen: {
+        upstreamBaseUrl: new URL(qwenBaseUrl),
+        upstreamApiKey: 'qwen-test-key',
         format: 'openai-chat',
         authScheme: 'bearer',
         maxTokensField: 'max_tokens',

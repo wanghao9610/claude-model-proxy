@@ -11,6 +11,24 @@ import {
 const SERVER_NAME = 'claude-model-proxy';
 const SERVER_VERSION = '0.1.0';
 const STATUS_TOOL_NAME = 'model_proxy_status';
+const SERVER_INSTRUCTIONS = 'This extension keeps a local model-name proxy running for Claude Desktop gateway requests. Use model_proxy_status to inspect runtime URL, provider key flags, and model routes.';
+const STATUS_TOOL = {
+  name: STATUS_TOOL_NAME,
+  title: 'Model proxy status',
+  description: 'Shows local proxy status, upstream providers, and model mappings.',
+  inputSchema: {
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  },
+  annotations: {
+    title: 'Model proxy status',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+};
 
 const config = loadConfig(process.env);
 const proxyState = {
@@ -92,7 +110,7 @@ function handleMessage(message) {
             name: SERVER_NAME,
             version: SERVER_VERSION,
           },
-          instructions: `This extension keeps a local model-name proxy running at ${proxyState.localUrl}. Configure Claude Desktop gateway base URL as ${config.baseUrl}.`,
+          instructions: SERVER_INSTRUCTIONS,
         });
         return;
 
@@ -108,18 +126,7 @@ function handleMessage(message) {
 
       case 'tools/list':
         respond(message.id, {
-          tools: [
-            {
-              name: STATUS_TOOL_NAME,
-              title: 'Model proxy status',
-              description: 'Shows local proxy status, upstream providers, and model mappings.',
-              inputSchema: {
-                type: 'object',
-                properties: {},
-                additionalProperties: false,
-              },
-            },
-          ],
+          tools: [STATUS_TOOL],
         });
         return;
 

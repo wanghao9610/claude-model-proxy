@@ -3,8 +3,8 @@
   "name": "claude-model-proxy",
   "display_name": "Claude Model Proxy",
   "version": "0.1.0",
-  "description": "Runs a local proxy that routes Claude gateway model names to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, and Anthropic upstreams.",
-  "long_description": "Starts a local HTTP proxy for Claude Desktop gateway. Requests are routed by model name: claude-deepseek-v4-flash maps to deepseek-v4-flash on DeepSeek, claude-deepseek-v4-pro maps to deepseek-v4-pro on DeepSeek, claude-kimi-k2.6 maps to kimi-k2.6 on Moonshot/Kimi, claude-glm-* aliases use actual Z.AI GLM model names, claude-mimo-* aliases use actual Xiaomi MiMo model names, claude-gpt-* aliases use OpenAI Chat Completions, claude-gemini-* aliases use Gemini's OpenAI-compatible API, and original Claude model names use Anthropic Messages. The installer focuses on gateway, DeepSeek, and Moonshot/Kimi settings; optional providers and mapping overrides can be supplied as advanced JSON.",
+  "description": "Runs a local proxy that routes Claude gateway model names to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, Qwen, and Anthropic upstreams.",
+  "long_description": "Starts a local HTTP proxy for Claude Desktop gateway. Requests are routed by model name: claude-deepseek-v4-flash maps to deepseek-v4-flash on DeepSeek, claude-deepseek-v4-pro maps to deepseek-v4-pro on DeepSeek, claude-kimi-k2.6 maps to kimi-k2.6 on Moonshot/Kimi, claude-glm-* aliases use actual Z.AI GLM model names, claude-mimo-* aliases use actual Xiaomi MiMo model names, claude-gpt-* aliases use OpenAI Chat Completions, claude-gemini-* aliases use Gemini's OpenAI-compatible API, claude-qwen-* aliases use Alibaba Cloud Model Studio Qwen's OpenAI-compatible API, and original Claude model names use Anthropic Messages. The installer focuses on gateway, DeepSeek, and Moonshot/Kimi settings; optional providers and mapping overrides can be supplied as advanced JSON.",
   "author": {
     "name": "Local"
   },
@@ -33,6 +33,45 @@
       "description": "Shows whether the local model-name proxy is running and how models are routed."
     }
   ],
+  "tools_generated": false,
+  "_meta": {
+    "com.microsoft.windows": {
+      "static_responses": {
+        "initialize": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "claude-model-proxy",
+            "version": "0.1.0"
+          },
+          "instructions": "This extension keeps a local model-name proxy running for Claude Desktop gateway requests. Use model_proxy_status to inspect runtime URL, provider key flags, and model routes."
+        },
+        "tools/list": {
+          "tools": [
+            {
+              "name": "model_proxy_status",
+              "title": "Model proxy status",
+              "description": "Shows local proxy status, upstream providers, and model mappings.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "annotations": {
+                "title": "Model proxy status",
+                "readOnlyHint": true,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
   "keywords": [
     "claude",
     "deepseek",
@@ -47,6 +86,10 @@
     "gpt",
     "gemini",
     "google",
+    "qwen",
+    "dashscope",
+    "aliyun",
+    "alibaba",
     "anthropic",
     "gateway",
     "proxy",
@@ -109,7 +152,7 @@
     "advanced_env": {
       "type": "string",
       "title": "Optional Advanced Settings JSON",
-      "description": "Optional JSON object for less common provider keys and overrides, for example {\"GLM_API_KEY\":\"...\",\"XIAOMI_API_KEY\":\"...\",\"ANTHROPIC_API_KEY\":\"sk-ant-...\",\"OPENAI_API_KEY\":\"sk-...\",\"GEMINI_API_KEY\":\"...\"}.",
+      "description": "Optional JSON object for less common provider keys and overrides, for example {\"GLM_API_KEY\":\"...\",\"XIAOMI_API_KEY\":\"...\",\"ANTHROPIC_API_KEY\":\"sk-ant-...\",\"OPENAI_API_KEY\":\"sk-...\",\"GEMINI_API_KEY\":\"...\",\"QWEN_API_KEY\":\"sk-...\"}.",
       "default": "{}",
       "required": false
     }
