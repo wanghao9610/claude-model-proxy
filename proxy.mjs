@@ -6,69 +6,51 @@ import { Transform } from 'node:stream';
 import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
 
-export const DEFAULT_MODEL_MAP = Object.freeze({
-  'claude-deepseek-v4-flash': 'deepseek-v4-flash',
-  'claude-deepseek-v4-pro': 'deepseek-v4-pro',
-  'claude-kimi-k2.6': 'kimi-k2.6',
-  'claude-glm-4.5-air': 'glm-4.5-air',
-  'claude-glm-4.6': 'glm-4.6',
-  'claude-glm-4.7': 'glm-4.7',
-  'claude-glm-5': 'glm-5',
-  'claude-glm-5.1': 'glm-5.1',
-  'claude-mimo-v2-flash': 'mimo-v2-flash',
-  'claude-mimo-v2-pro': 'mimo-v2-pro',
-  'claude-mimo-v2.5-pro': 'mimo-v2.5-pro',
-  'claude-mimo-v2-omni': 'mimo-v2-omni',
-  'claude-gpt-5.5': 'gpt-5.5',
-  'claude-gpt-5.4': 'gpt-5.4',
-  'claude-gpt-5.4-mini': 'gpt-5.4-mini',
-  'claude-gemini-3.1-pro-preview': 'gemini-3.1-pro-preview',
-  'claude-gemini-3-flash-preview': 'gemini-3-flash-preview',
-  'claude-gemini-2.5-pro': 'gemini-2.5-pro',
-  'claude-gemini-2.5-flash': 'gemini-2.5-flash',
-  'claude-gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite-preview',
-  'claude-gemini-2.0-flash': 'gemini-2.0-flash',
-  'claude-qwen-flash': 'qwen-flash',
-  'claude-qwen-plus': 'qwen-plus',
-  'claude-qwen-max': 'qwen-max',
-  'claude-haiku-4-5': 'claude-haiku-4-5',
-  'claude-sonnet-4-6': 'claude-sonnet-4-6',
-  'claude-opus-4-7': 'claude-opus-4-7',
-  'claude-sonnet-4-5': 'claude-sonnet-4-5',
-  'claude-opus-4-1': 'claude-opus-4-1',
+const DEFAULT_REAL_MODELS = Object.freeze([
+  'deepseek-v4-flash',
+  'deepseek-v4-pro',
+  'kimi-k2.6',
+  'glm-4.5-air',
+  'glm-4.6',
+  'glm-4.7',
+  'glm-5',
+  'glm-5.1',
+  'mimo-v2-flash',
+  'mimo-v2-pro',
+  'mimo-v2.5-pro',
+  'mimo-v2-omni',
+  'gpt-5.5',
+  'gpt-5.4',
+  'gpt-5.4-mini',
+  'gemini-3.1-pro-preview',
+  'gemini-3-flash-preview',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-2.0-flash',
+  'qwen-flash',
+  'qwen-plus',
+  'qwen-max',
+  'claude-haiku-4-5',
+  'claude-sonnet-4-6',
+  'claude-opus-4-7',
+  'claude-sonnet-4-5',
+  'claude-opus-4-1',
+]);
+
+export const DEFAULT_MODEL_MAP = Object.freeze(
+  Object.fromEntries(DEFAULT_REAL_MODELS.map((model) => [model, model])),
+);
+
+export const DEFAULT_CLAUDE_MODEL_MAP = Object.freeze({
+  'claude-haiku': 'deepseek-v4-flash',
+  'claude-sonnet': 'deepseek-v4-pro',
+  'claude-opus': 'deepseek-v4-pro',
 });
 
-export const DEFAULT_MODEL_ALIASES = Object.freeze({
-  'deepseek-v4-flash': 'claude-deepseek-v4-flash',
-  'deepseek-v4-pro': 'claude-deepseek-v4-pro',
-  'kimi-k2.6': 'claude-kimi-k2.6',
-  'glm-4.5-air': 'claude-glm-4.5-air',
-  'glm-4.6': 'claude-glm-4.6',
-  'glm-4.7': 'claude-glm-4.7',
-  'glm-5': 'claude-glm-5',
-  'glm-5.1': 'claude-glm-5.1',
-  'mimo-v2-flash': 'claude-mimo-v2-flash',
-  'mimo-v2-pro': 'claude-mimo-v2-pro',
-  'mimo-v2.5-pro': 'claude-mimo-v2.5-pro',
-  'mimo-v2-omni': 'claude-mimo-v2-omni',
-  'gpt-5.5': 'claude-gpt-5.5',
-  'gpt-5.4': 'claude-gpt-5.4',
-  'gpt-5.4-mini': 'claude-gpt-5.4-mini',
-  'gemini-3.1-flash-lite-preview': 'claude-gemini-3.1-flash-lite-preview',
-  'gemini-3-flash-preview': 'claude-gemini-3-flash-preview',
-  'gemini-3.1-pro-preview': 'claude-gemini-3.1-pro-preview',
-  'gemini-2.5-pro': 'claude-gemini-2.5-pro',
-  'gemini-2.5-flash': 'claude-gemini-2.5-flash',
-  'gemini-2.0-flash': 'claude-gemini-2.0-flash',
-  'qwen-flash': 'claude-qwen-flash',
-  'qwen-plus': 'claude-qwen-plus',
-  'qwen-max': 'claude-qwen-max',
-  'claude-haiku-4-5': 'claude-haiku-4-5',
-  'claude-sonnet-4-6': 'claude-sonnet-4-6',
-  'claude-opus-4-7': 'claude-opus-4-7',
-  'claude-sonnet-4-5': 'claude-sonnet-4-5',
-  'claude-opus-4-1': 'claude-opus-4-1',
-});
+export const DEFAULT_MODEL_ALIASES = Object.freeze(
+  Object.fromEntries(DEFAULT_REAL_MODELS.map((model) => [model, model])),
+);
 
 export const DEFAULT_MODEL_ROUTES = Object.freeze({
   'deepseek-v4-flash': 'deepseek',
@@ -136,6 +118,10 @@ export function loadConfig(env = process.env) {
   const modelMap = {
     ...DEFAULT_MODEL_MAP,
     ...parseStringMap(env.MODEL_MAP, 'MODEL_MAP'),
+  };
+  const claudeModelMap = {
+    ...DEFAULT_CLAUDE_MODEL_MAP,
+    ...parseStringMap(env.CLAUDE_MODEL_MAP, 'CLAUDE_MODEL_MAP'),
   };
   const modelAliases = {
     ...DEFAULT_MODEL_ALIASES,
@@ -230,6 +216,7 @@ export function loadConfig(env = process.env) {
       },
     },
     modelMap,
+    claudeModelMap,
     modelAliases,
     modelRoutes,
     rewriteResponses: parseBoolean(env.REWRITE_RESPONSES, true),
@@ -252,6 +239,7 @@ export function createProxyServer(config = loadConfig()) {
           defaultProvider: normalizedConfig.defaultProvider,
           providers: getProviderStatus(normalizedConfig.providers),
           modelMap: normalizedConfig.modelMap,
+          claudeModelMap: normalizedConfig.claudeModelMap,
           modelAliases: normalizedConfig.modelAliases,
           modelRoutes: normalizedConfig.modelRoutes,
           rewriteResponses: normalizedConfig.rewriteResponses,
@@ -349,7 +337,8 @@ function prepareRequest(rawBody, contentType, config) {
 
   const text = rawBody.toString('utf8');
   const parsed = JSON.parse(text);
-  const rewritten = rewriteModelValues(parsed, config.modelMap);
+  const requestModelMap = getRequestModelMap(config);
+  const rewritten = rewriteModelValues(parsed, requestModelMap);
   const requestModels = collectModelValues(parsed);
   const upstreamModels = collectModelValues(rewritten);
   const routeModel = upstreamModels[0] || requestModels[0] || '';
@@ -362,8 +351,15 @@ function prepareRequest(rawBody, contentType, config) {
       upstreamModels,
       config.modelAliases,
       requestModels,
-      config.modelMap,
+      requestModelMap,
     ),
+  };
+}
+
+function getRequestModelMap(config) {
+  return {
+    ...config.modelMap,
+    ...config.claudeModelMap,
   };
 }
 
@@ -1231,6 +1227,7 @@ function normalizeConfig(config) {
     defaultProvider,
     providers,
     modelMap: config.modelMap || DEFAULT_MODEL_MAP,
+    claudeModelMap: config.claudeModelMap || DEFAULT_CLAUDE_MODEL_MAP,
     modelAliases: config.modelAliases || config.reverseModelMap || DEFAULT_MODEL_ALIASES,
     modelRoutes: normalizeProviderRoutes(config.modelRoutes || DEFAULT_MODEL_ROUTES),
     rewriteResponses: config.rewriteResponses ?? true,

@@ -1,7 +1,7 @@
 {
   "name": "claude-model-proxy",
-  "version": "0.1.0",
-  "description": "Local Claude Desktop gateway proxy that routes Claude-style model names to multiple upstream providers.",
+  "version": "0.1.1",
+  "description": "Local Claude Desktop gateway proxy that routes real and mapped model names to multiple upstream providers.",
   "private": true,
   "type": "module",
   "keywords": [

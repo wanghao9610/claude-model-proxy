@@ -1,38 +1,47 @@
 # Claude Model Proxy
 
 Claude Model Proxy 是一个本地 Claude 网关代理。它让 Claude Desktop 或
-Claude Code 继续使用 Claude 风格的模型名称，同时把请求按模型名路由到
-DeepSeek、Moonshot/Kimi、GLM、小米 MiMo、OpenAI、Gemini、Qwen 或 Anthropic
-等上游服务。
+Claude Code 通过真实上游模型名访问 DeepSeek、Moonshot/Kimi、GLM、小米
+MiMo、OpenAI、Gemini、Qwen 或 Anthropic 等上游服务，同时保留
+`claude-haiku`、`claude-sonnet`、`claude-opus` 这三个 Claude 语义别名到
+自定义模型的映射。
 
 ## 默认模型映射
 
-| Claude 模型名 | 上游服务 | 上游模型 |
+| 请求模型名 | 上游服务 | 上游模型 |
 | --- | --- | --- |
 | `claude-haiku-4-5` | Anthropic | `claude-haiku-4-5` |
 | `claude-sonnet-4-6` | Anthropic | `claude-sonnet-4-6` |
 | `claude-opus-4-7` | Anthropic | `claude-opus-4-7` |
-| `claude-deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
-| `claude-deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
-| `claude-kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
-| `claude-glm-4.5-air` | GLM | `glm-4.5-air` |
-| `claude-glm-4.7` | GLM | `glm-4.7` |
-| `claude-glm-5.1` | GLM | `glm-5.1` |
-| `claude-mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
-| `claude-mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
-| `claude-mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
-| `claude-gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
-| `claude-gpt-5.4` | OpenAI | `gpt-5.4` |
-| `claude-gpt-5.5` | OpenAI | `gpt-5.5` |
-| `claude-gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
-| `claude-gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
-| `claude-gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
-| `claude-qwen-flash` | Qwen | `qwen-flash` |
-| `claude-qwen-plus` | Qwen | `qwen-plus` |
-| `claude-qwen-max` | Qwen | `qwen-max` |
+| `deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
+| `deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
+| `kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
+| `glm-4.5-air` | GLM | `glm-4.5-air` |
+| `glm-4.7` | GLM | `glm-4.7` |
+| `glm-5.1` | GLM | `glm-5.1` |
+| `mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
+| `mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
+| `mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
+| `gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
+| `gpt-5.4` | OpenAI | `gpt-5.4` |
+| `gpt-5.5` | OpenAI | `gpt-5.5` |
+| `gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
+| `gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
+| `gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
+| `qwen-flash` | Qwen | `qwen-flash` |
+| `qwen-plus` | Qwen | `qwen-plus` |
+| `qwen-max` | Qwen | `qwen-max` |
 
-`Claude 模型名` 同时是请求模型名和默认响应别名。响应中的上游模型名会被
-重写回 Claude 风格模型名，便于 Claude Desktop 和 Claude Code 识别。
+默认 Claude 语义别名映射：
+
+| Claude 别名 | 默认上游模型 |
+| --- | --- |
+| `claude-haiku` | `deepseek-v4-flash` |
+| `claude-sonnet` | `deepseek-v4-pro` |
+| `claude-opus` | `deepseek-v4-pro` |
+
+当请求使用这些别名时，代理会把请求发给对应真实上游模型，并把响应里的模型名
+改回本次请求使用的别名。
 
 ## 环境要求
 
@@ -103,8 +112,10 @@ http://127.0.0.1:8787
 - `GEMINI_BASE_URL` / `GEMINI_API_KEY`：Gemini OpenAI-compatible 上游配置
 - `QWEN_BASE_URL` / `QWEN_API_KEY`：Qwen/DashScope OpenAI-compatible 上游配置（
   或者 `DASHSCOPE_API_KEY` 别名）
+- `CLAUDE_MODEL_MAP`：Claude 语义别名到真实上游模型名的映射，默认
+  `{"claude-haiku":"deepseek-v4-flash","claude-sonnet":"deepseek-v4-pro","claude-opus":"deepseek-v4-pro"}`
 - `MODEL_MAP`：请求模型名到上游模型名的映射
-- `MODEL_ALIASES`：上游模型名到 Claude 响应别名的映射
+- `MODEL_ALIASES`：上游模型名到响应模型别名的映射，默认保持真实模型名
 - `MODEL_ROUTES`：上游模型名到 provider 名称的映射
 - `REWRITE_RESPONSES`：是否重写响应中的模型名，默认开启
 
@@ -125,10 +136,10 @@ claude
 默认示例会这样映射 Claude Code 的模型别名：
 
 ```sh
-ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-deepseek-v4-flash
-ANTHROPIC_DEFAULT_SONNET_MODEL=claude-deepseek-v4-pro
-ANTHROPIC_DEFAULT_OPUS_MODEL=claude-kimi-k2.6
-CLAUDE_CODE_SUBAGENT_MODEL=claude-deepseek-v4-flash
+ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku
+ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet
+ANTHROPIC_DEFAULT_OPUS_MODEL=claude-opus
+CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku
 ANTHROPIC_MODEL=sonnet
 ```
 
@@ -137,7 +148,7 @@ ANTHROPIC_MODEL=sonnet
 ```sh
 ANTHROPIC_BASE_URL=http://127.0.0.1:8787 \
 ANTHROPIC_API_KEY=dummy-claude-model-proxy \
-claude --model claude-deepseek-v4-pro
+claude --model deepseek-v4-pro
 ```
 
 这里的 `ANTHROPIC_API_KEY` 只是给 Claude Code 使用的非空占位值。真正的
@@ -160,7 +171,7 @@ npm run build:mcpb
 输出文件：
 
 ```text
-dist/claude-model-proxy-0.1.0.mcpb
+dist/claude-model-proxy-0.1.1.mcpb
 ```
 
 在 Claude Desktop 中进入 Settings -> Extensions / Connectors ->
@@ -168,8 +179,38 @@ Advanced settings -> Install Extension，安装该 `.mcpb` 文件。首次安装
 
 - Gateway URL
 - 本地端口
-- DeepSeek Base URL 和 API key
-- Moonshot/Kimi Base URL 和 API key
+- 你实际使用的 provider API key
+- Claude Model Map，也就是 `claude-haiku`、`claude-sonnet`、`claude-opus`
+  分别映射到哪个真实上游模型
+
+DeepSeek 和 Moonshot/Kimi Base URL 都是可选项。插件已经内置官方默认地址，
+只有在你使用自定义 endpoint、代理网关或兼容服务时才需要修改。
+
+如果只用一家 API 提供商，只填写这一家的 API key，其他 provider key 留空即可。
+例如只用 Moonshot/Kimi 时，填写 `Moonshot API Key`，`DeepSeek API Key` 留空，
+并把 `Claude Model Map` 改成 Moonshot/Kimi 的真实模型名：
+
+```json
+{
+  "claude-haiku": "kimi-k2.6",
+  "claude-sonnet": "kimi-k2.6",
+  "claude-opus": "kimi-k2.6"
+}
+```
+
+如果只用 DeepSeek，填写 `DeepSeek API Key`，`Moonshot API Key` 留空，
+可以保留或按需调整默认映射：
+
+```json
+{
+  "claude-haiku": "deepseek-v4-flash",
+  "claude-sonnet": "deepseek-v4-pro",
+  "claude-opus": "deepseek-v4-pro"
+}
+```
+
+如果只用 `Optional Advanced Settings JSON` 里的其他 provider，也遵循同样规则：
+只填写该 provider 的 key，并把 Claude 语义别名映射到该 provider 支持的真实模型名。
 
 其他 provider key 和高级映射可以通过 `Optional Advanced Settings JSON` 填写：
 
@@ -194,9 +235,9 @@ Advanced settings -> Install Extension，安装该 `.mcpb` 文件。首次安装
 - Gateway base URL：`http://127.0.0.1:8787`
 - Gateway API key：任意非空占位值，例如 `dummy-claude-model-proxy`
 - Gateway auth scheme：`bearer`
-- Model list：添加要暴露给 Claude Desktop 的模型名，例如
-  `claude-deepseek-v4-flash`、`claude-deepseek-v4-pro`、`claude-kimi-k2.6`、
-  `claude-qwen-flash`、`claude-qwen-plus` 或 `claude-qwen-max`
+- Model list：添加要暴露给 Claude Desktop 的真实模型名，例如
+  `deepseek-v4-flash`、`deepseek-v4-pro`、`kimi-k2.6`、`qwen-flash`、
+  `qwen-plus` 或 `qwen-max`
 
 注意：真实的上游 provider API key 不填在 Gateway API key 字段里，而是填在
 插件安装配置、环境变量或 LaunchAgent 配置文件中。

@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 
 import {
+  DEFAULT_CLAUDE_MODEL_MAP,
   DEFAULT_MODEL_ALIASES,
   DEFAULT_MODEL_MAP,
   DEFAULT_MODEL_ROUTES,
@@ -14,7 +15,7 @@ import {
   loadConfig,
 } from '../proxy.mjs';
 
-test('routes claude-deepseek-v4-flash to DeepSeek flash and rewrites responses back', async (t) => {
+test('routes deepseek-v4-flash to DeepSeek flash without aliasing model names', async (t) => {
   let upstreamBody;
   let upstreamAuthorization;
 
@@ -48,7 +49,7 @@ test('routes claude-deepseek-v4-flash to DeepSeek flash and rewrites responses b
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-deepseek-v4-flash',
+    model: 'deepseek-v4-flash',
     max_tokens: 16,
     messages: [
       {
@@ -62,7 +63,124 @@ test('routes claude-deepseek-v4-flash to DeepSeek flash and rewrites responses b
   assert.equal(JSON.parse(upstreamBody).model, 'deepseek-v4-flash');
   assert.equal(JSON.parse(upstreamBody).messages[0].content, 'deepseek-v4-flash');
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.model, 'claude-deepseek-v4-flash');
+  assert.equal(response.body.model, 'deepseek-v4-flash');
+});
+
+test('maps Claude semantic aliases to configured real upstream model names', async (t) => {
+  let upstreamBody;
+
+  const deepseek = http.createServer(async (req, res) => {
+    upstreamBody = await readBody(req);
+
+    res.writeHead(200, {
+      'content-type': 'application/json',
+    });
+    res.end(JSON.stringify({
+      id: 'msg_alias',
+      model: 'deepseek-v4-pro',
+      content: [
+        {
+          type: 'text',
+          text: 'ok',
+        },
+      ],
+    }));
+  });
+
+  await listen(deepseek);
+  t.after(() => close(deepseek));
+
+  const proxy = createProxyServer(createTestConfig({
+    deepseekBaseUrl: `http://127.0.0.1:${deepseek.address().port}`,
+  }));
+
+  await listen(proxy);
+  t.after(() => close(proxy));
+
+  const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
+    model: 'claude-sonnet',
+    max_tokens: 16,
+    messages: [
+      {
+        role: 'user',
+        content: 'hello',
+      },
+    ],
+  });
+
+  assert.equal(JSON.parse(upstreamBody).model, 'deepseek-v4-pro');
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.model, 'claude-sonnet');
+});
+
+test('routes real DeepSeek and Kimi model names without Claude-prefixed aliases', async (t) => {
+  const seen = [];
+
+  const deepseek = http.createServer(async (req, res) => {
+    seen.push({
+      provider: 'deepseek',
+      authorization: req.headers.authorization,
+      body: await readBody(req),
+    });
+
+    res.writeHead(200, {
+      'content-type': 'application/json',
+    });
+    res.end(JSON.stringify({
+      model: 'deepseek-v4-pro',
+    }));
+  });
+
+  const moonshot = http.createServer(async (req, res) => {
+    seen.push({
+      provider: 'moonshot',
+      authorization: req.headers.authorization,
+      body: await readBody(req),
+    });
+
+    res.writeHead(200, {
+      'content-type': 'application/json',
+    });
+    res.end(JSON.stringify({
+      model: 'kimi-k2.6',
+    }));
+  });
+
+  await Promise.all([
+    listen(deepseek),
+    listen(moonshot),
+  ]);
+  t.after(() => close(deepseek));
+  t.after(() => close(moonshot));
+
+  const proxy = createProxyServer(createTestConfig({
+    deepseekBaseUrl: `http://127.0.0.1:${deepseek.address().port}`,
+    moonshotBaseUrl: `http://127.0.0.1:${moonshot.address().port}`,
+  }));
+
+  await listen(proxy);
+  t.after(() => close(proxy));
+
+  const deepseekResponse = await postJson(
+    `http://127.0.0.1:${proxy.address().port}/v1/messages`,
+    {
+      model: 'deepseek-v4-pro',
+    },
+  );
+  const kimiResponse = await postJson(
+    `http://127.0.0.1:${proxy.address().port}/v1/messages`,
+    {
+      model: 'kimi-k2.6',
+    },
+  );
+
+  assert.deepEqual(seen.map((item) => item.provider), ['deepseek', 'moonshot']);
+  assert.equal(seen[0].authorization, 'Bearer deepseek-test-key');
+  assert.equal(JSON.parse(seen[0].body).model, 'deepseek-v4-pro');
+  assert.equal(seen[1].authorization, 'Bearer moonshot-test-key');
+  assert.equal(JSON.parse(seen[1].body).model, 'kimi-k2.6');
+  assert.equal(deepseekResponse.body.model, 'deepseek-v4-pro');
+  assert.equal(kimiResponse.body.model, 'kimi-k2.6');
 });
 
 test('routes original Claude model names to Anthropic upstream', async (t) => {
@@ -152,13 +270,13 @@ test('routes DeepSeek pro and Kimi model names to their providers', async (t) =>
   const deepseekResponse = await postJson(
     `http://127.0.0.1:${proxy.address().port}/v1/messages`,
     {
-      model: 'claude-deepseek-v4-pro',
+      model: 'deepseek-v4-pro',
     },
   );
   const kimiResponse = await postJson(
     `http://127.0.0.1:${proxy.address().port}/v1/messages`,
     {
-      model: 'claude-kimi-k2.6',
+      model: 'kimi-k2.6',
     },
   );
 
@@ -167,11 +285,11 @@ test('routes DeepSeek pro and Kimi model names to their providers', async (t) =>
   assert.equal(JSON.parse(seen[0].body).model, 'deepseek-v4-pro');
   assert.equal(seen[1].authorization, 'Bearer moonshot-test-key');
   assert.equal(JSON.parse(seen[1].body).model, 'kimi-k2.6');
-  assert.equal(deepseekResponse.body.model, 'claude-deepseek-v4-pro');
-  assert.equal(kimiResponse.body.model, 'claude-kimi-k2.6');
+  assert.equal(deepseekResponse.body.model, 'deepseek-v4-pro');
+  assert.equal(kimiResponse.body.model, 'kimi-k2.6');
 });
 
-test('rewrites streamed Kimi SSE model names even when split across chunks', async (t) => {
+test('rewrites streamed Kimi SSE model names for Claude semantic aliases', async (t) => {
   const moonshot = http.createServer((_req, res) => {
     res.writeHead(200, {
       'content-type': 'text/event-stream',
@@ -187,17 +305,20 @@ test('rewrites streamed Kimi SSE model names even when split across chunks', asy
 
   const proxy = createProxyServer(createTestConfig({
     moonshotBaseUrl: `http://127.0.0.1:${moonshot.address().port}`,
+    claudeModelMap: {
+      'claude-opus': 'kimi-k2.6',
+    },
   }));
 
   await listen(proxy);
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-kimi-k2.6',
+    model: 'claude-opus',
     stream: true,
   });
 
-  assert.equal(response.text, 'data: {"model":"claude-kimi-k2.6"}\n\n');
+  assert.equal(response.text, 'data: {"model":"claude-opus"}\n\n');
 });
 
 test('routes GLM and Xiaomi MiMo models with provider-specific API keys', async (t) => {
@@ -252,19 +373,19 @@ test('routes GLM and Xiaomi MiMo models with provider-specific API keys', async 
   const glmResponse = await postJson(
     `http://127.0.0.1:${proxy.address().port}/v1/messages`,
     {
-      model: 'claude-glm-4.7',
+      model: 'glm-4.7',
     },
   );
   const xiaomiResponse = await postJson(
     `http://127.0.0.1:${proxy.address().port}/v1/messages`,
     {
-      model: 'claude-mimo-v2-flash',
+      model: 'mimo-v2-flash',
     },
   );
   const xiaomiProResponse = await postJson(
     `http://127.0.0.1:${proxy.address().port}/v1/messages`,
     {
-      model: 'claude-mimo-v2-pro',
+      model: 'mimo-v2-pro',
     },
   );
 
@@ -275,9 +396,9 @@ test('routes GLM and Xiaomi MiMo models with provider-specific API keys', async 
   assert.equal(JSON.parse(seen[1].body).model, 'mimo-v2-flash');
   assert.equal(seen[2].authorization, 'Bearer xiaomi-test-key');
   assert.equal(JSON.parse(seen[2].body).model, 'mimo-v2-pro');
-  assert.equal(glmResponse.body.model, 'claude-glm-4.7');
-  assert.equal(xiaomiResponse.body.model, 'claude-mimo-v2-flash');
-  assert.equal(xiaomiProResponse.body.model, 'claude-mimo-v2-pro');
+  assert.equal(glmResponse.body.model, 'glm-4.7');
+  assert.equal(xiaomiResponse.body.model, 'mimo-v2-flash');
+  assert.equal(xiaomiProResponse.body.model, 'mimo-v2-pro');
 });
 
 test('adapts OpenAI Chat Completions to Anthropic Messages', async (t) => {
@@ -325,7 +446,7 @@ test('adapts OpenAI Chat Completions to Anthropic Messages', async (t) => {
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-gpt-5.5',
+    model: 'gpt-5.5',
     max_tokens: 32,
     system: 'be terse',
     messages: [
@@ -357,7 +478,7 @@ test('adapts OpenAI Chat Completions to Anthropic Messages', async (t) => {
     },
   ]);
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.model, 'claude-gpt-5.5');
+  assert.equal(response.body.model, 'gpt-5.5');
   assert.deepEqual(response.body.content, [
     {
       type: 'text',
@@ -409,7 +530,7 @@ test('routes Gemini OpenAI-compatible requests with Gemini API key', async (t) =
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-gemini-3.1-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     max_tokens: 64,
     messages: [
       {
@@ -425,7 +546,7 @@ test('routes Gemini OpenAI-compatible requests with Gemini API key', async (t) =
   assert.equal(parsedUpstreamBody.model, 'gemini-3.1-pro-preview');
   assert.equal(parsedUpstreamBody.max_tokens, 64);
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.model, 'claude-gemini-3.1-pro-preview');
+  assert.equal(response.body.model, 'gemini-3.1-pro-preview');
 });
 
 test('routes Qwen OpenAI-compatible requests with DashScope API key', async (t) => {
@@ -467,7 +588,7 @@ test('routes Qwen OpenAI-compatible requests with DashScope API key', async (t) 
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-qwen-plus',
+    model: 'qwen-plus',
     max_tokens: 64,
     messages: [
       {
@@ -483,7 +604,7 @@ test('routes Qwen OpenAI-compatible requests with DashScope API key', async (t) 
   assert.equal(parsedUpstreamBody.model, 'qwen-plus');
   assert.equal(parsedUpstreamBody.max_tokens, 64);
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.model, 'claude-qwen-plus');
+  assert.equal(response.body.model, 'qwen-plus');
 });
 
 test('routes Anthropic Claude models with x-api-key auth', async (t) => {
@@ -564,7 +685,7 @@ test('converts OpenAI-compatible streaming responses to Anthropic SSE', async (t
   t.after(() => close(proxy));
 
   const response = await postJson(`http://127.0.0.1:${proxy.address().port}/v1/messages`, {
-    model: 'claude-gpt-5.5',
+    model: 'gpt-5.5',
     stream: true,
     messages: [
       {
@@ -575,7 +696,7 @@ test('converts OpenAI-compatible streaming responses to Anthropic SSE', async (t
   });
 
   assert.match(response.text, /event: message_start/);
-  assert.match(response.text, /"model":"claude-gpt-5.5"/);
+  assert.match(response.text, /"model":"gpt-5.5"/);
   assert.match(response.text, /"text":"hel"/);
   assert.match(response.text, /"text":"lo"/);
   assert.match(response.text, /event: message_stop/);
@@ -620,7 +741,8 @@ test('loads hidden optional provider config from advanced env JSON', () => {
       GEMINI_API_KEY: 'gemini-advanced-key',
       QWEN_API_KEY: 'qwen-advanced-key',
       GLM_API_KEY: 'glm-advanced-key',
-      MODEL_MAP: '{"claude-custom-gpt":"custom-gpt"}',
+      MODEL_MAP: '{"custom-gpt":"custom-gpt"}',
+      CLAUDE_MODEL_MAP: '{"claude-sonnet":"custom-gpt"}',
       MODEL_ROUTES: '{"custom-gpt":"openai"}',
       REWRITE_RESPONSES: false,
     }),
@@ -631,7 +753,8 @@ test('loads hidden optional provider config from advanced env JSON', () => {
   assert.equal(config.providers.gemini.upstreamApiKey, 'gemini-advanced-key');
   assert.equal(config.providers.qwen.upstreamApiKey, 'qwen-advanced-key');
   assert.equal(config.providers.glm.upstreamApiKey, 'glm-advanced-key');
-  assert.equal(config.modelMap['claude-custom-gpt'], 'custom-gpt');
+  assert.equal(config.modelMap['custom-gpt'], 'custom-gpt');
+  assert.equal(config.claudeModelMap['claude-sonnet'], 'custom-gpt');
   assert.equal(config.modelRoutes['custom-gpt'], 'openai');
   assert.equal(config.rewriteResponses, false);
 });
@@ -652,6 +775,7 @@ test('manifest keeps installer config focused on DeepSeek and Moonshot', () => {
     'deepseek_api_key',
     'moonshot_base_url',
     'moonshot_api_key',
+    'claude_model_map',
     'advanced_env',
   ]);
   assert.deepEqual(Object.keys(manifest.server.mcp_config.env), [
@@ -661,8 +785,17 @@ test('manifest keeps installer config focused on DeepSeek and Moonshot', () => {
     'DEEPSEEK_API_KEY',
     'MOONSHOT_BASE_URL',
     'MOONSHOT_API_KEY',
+    'CLAUDE_MODEL_MAP',
     'ADVANCED_ENV',
   ]);
+  assert.equal(manifest.user_config.deepseek_base_url.required, false);
+  assert.equal(manifest.user_config.moonshot_base_url.required, false);
+  assert.equal(manifest.user_config.deepseek_api_key.required, false);
+  assert.equal(manifest.user_config.moonshot_api_key.required, false);
+  assert.equal(
+    manifest.user_config.claude_model_map.default,
+    '{"claude-haiku":"deepseek-v4-flash","claude-sonnet":"deepseek-v4-pro","claude-opus":"deepseek-v4-pro"}',
+  );
   assert.equal(manifest.tools_generated, false);
   assert.deepEqual(manifest.tools, [
     {
@@ -706,23 +839,27 @@ test('serves configured model list for Claude Code and SDK discovery', async (t)
   assert.equal(modelsResponse.statusCode, 200);
   assert.equal(modelsResponse.body.has_more, false);
   assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'deepseek-v4-pro'),
+    true,
+  );
+  assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'kimi-k2.6'),
+    true,
+  );
+  assert.equal(
+    modelsResponse.body.data.some((model) => model.id === 'qwen-max'),
+    true,
+  );
+  assert.equal(
     modelsResponse.body.data.some((model) => model.id === 'claude-deepseek-v4-pro'),
-    true,
-  );
-  assert.equal(
-    modelsResponse.body.data.some((model) => model.id === 'claude-kimi-k2.6'),
-    true,
-  );
-  assert.equal(
-    modelsResponse.body.data.some((model) => model.id === 'claude-qwen-max'),
-    true,
+    false,
   );
 
   const modelResponse = await getJson(
-    `http://127.0.0.1:${proxy.address().port}/v1/models/claude-deepseek-v4-pro`,
+    `http://127.0.0.1:${proxy.address().port}/v1/models/deepseek-v4-pro`,
   );
   assert.equal(modelResponse.statusCode, 200);
-  assert.equal(modelResponse.body.id, 'claude-deepseek-v4-pro');
+  assert.equal(modelResponse.body.id, 'deepseek-v4-pro');
   assert.equal(modelResponse.body.type, 'model');
 });
 
@@ -777,9 +914,9 @@ test('uses Anthropic-compatible provider base URLs by default', () => {
       'gpt-5.5',
     ],
   );
-  assert.equal(config.modelMap['claude-gpt-5.5'], 'gpt-5.5');
-  assert.equal(config.modelMap['claude-gpt-5.4'], 'gpt-5.4');
-  assert.equal(config.modelMap['claude-gpt-5.4-mini'], 'gpt-5.4-mini');
+  assert.equal(config.modelMap['gpt-5.5'], 'gpt-5.5');
+  assert.equal(config.modelMap['gpt-5.4'], 'gpt-5.4');
+  assert.equal(config.modelMap['gpt-5.4-mini'], 'gpt-5.4-mini');
   assert.deepEqual(
     Object.entries(config.modelRoutes)
       .filter(([, provider]) => provider === 'qwen')
@@ -791,9 +928,12 @@ test('uses Anthropic-compatible provider base URLs by default', () => {
       'qwen-plus',
     ],
   );
-  assert.equal(config.modelMap['claude-qwen-flash'], 'qwen-flash');
-  assert.equal(config.modelMap['claude-qwen-plus'], 'qwen-plus');
-  assert.equal(config.modelMap['claude-qwen-max'], 'qwen-max');
+  assert.equal(config.modelMap['qwen-flash'], 'qwen-flash');
+  assert.equal(config.modelMap['qwen-plus'], 'qwen-plus');
+  assert.equal(config.modelMap['qwen-max'], 'qwen-max');
+  assert.equal(config.claudeModelMap['claude-haiku'], 'deepseek-v4-flash');
+  assert.equal(config.claudeModelMap['claude-sonnet'], 'deepseek-v4-pro');
+  assert.equal(config.claudeModelMap['claude-opus'], 'deepseek-v4-pro');
 });
 
 function createTestConfig({
@@ -805,6 +945,7 @@ function createTestConfig({
   geminiBaseUrl = 'http://127.0.0.1:6/v1beta/openai',
   qwenBaseUrl = 'http://127.0.0.1:7/compatible-mode/v1',
   anthropicBaseUrl = 'http://127.0.0.1:8',
+  claudeModelMap = DEFAULT_CLAUDE_MODEL_MAP,
 }) {
   return {
     baseUrl: 'https://127.0.0.1:8787',
@@ -856,6 +997,7 @@ function createTestConfig({
       },
     },
     modelMap: DEFAULT_MODEL_MAP,
+    claudeModelMap,
     modelAliases: DEFAULT_MODEL_ALIASES,
     modelRoutes: DEFAULT_MODEL_ROUTES,
     rewriteResponses: true,

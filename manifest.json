@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "claude-model-proxy",
   "display_name": "Claude Model Proxy",
-  "version": "0.1.0",
-  "description": "Runs a local proxy that routes Claude gateway model names to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, Qwen, and Anthropic upstreams.",
-  "long_description": "Starts a local HTTP proxy for Claude Desktop gateway. Requests are routed by model name: claude-deepseek-v4-flash maps to deepseek-v4-flash on DeepSeek, claude-deepseek-v4-pro maps to deepseek-v4-pro on DeepSeek, claude-kimi-k2.6 maps to kimi-k2.6 on Moonshot/Kimi, claude-glm-* aliases use actual Z.AI GLM model names, claude-mimo-* aliases use actual Xiaomi MiMo model names, claude-gpt-* aliases use OpenAI Chat Completions, claude-gemini-* aliases use Gemini's OpenAI-compatible API, claude-qwen-* aliases use Alibaba Cloud Model Studio Qwen's OpenAI-compatible API, and original Claude model names use Anthropic Messages. The installer focuses on gateway, DeepSeek, and Moonshot/Kimi settings; optional providers and mapping overrides can be supplied as advanced JSON.",
+  "version": "0.1.1",
+  "description": "Runs a local proxy that routes Claude gateway requests to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, Qwen, and Anthropic upstreams.",
+  "long_description": "Starts a local HTTP proxy for Claude Desktop gateway. The model list exposes real upstream model names such as deepseek-v4-flash, deepseek-v4-pro, kimi-k2.6, qwen-plus, and original Anthropic Claude model names. Claude semantic aliases are configured separately: claude-haiku, claude-sonnet, and claude-opus map to custom upstream models through the Claude Model Map setting. The installer focuses on gateway, DeepSeek, Moonshot/Kimi, and Claude alias mapping settings; optional providers and lower-level overrides can be supplied as advanced JSON.",
   "author": {
     "name": "Local"
   },
@@ -23,6 +23,7 @@
         "DEEPSEEK_API_KEY": "${user_config.deepseek_api_key}",
         "MOONSHOT_BASE_URL": "${user_config.moonshot_base_url}",
         "MOONSHOT_API_KEY": "${user_config.moonshot_api_key}",
+        "CLAUDE_MODEL_MAP": "${user_config.claude_model_map}",
         "ADVANCED_ENV": "${user_config.advanced_env}"
       }
     }
@@ -44,7 +45,7 @@
           },
           "serverInfo": {
             "name": "claude-model-proxy",
-            "version": "0.1.0"
+            "version": "0.1.1"
           },
           "instructions": "This extension keeps a local model-name proxy running for Claude Desktop gateway requests. Use model_proxy_status to inspect runtime URL, provider key flags, and model routes."
         },
@@ -124,30 +125,37 @@
     "deepseek_base_url": {
       "type": "string",
       "title": "DeepSeek Base URL",
-      "description": "DeepSeek-compatible API base URL.",
+      "description": "Optional DeepSeek-compatible API base URL. Leave unchanged unless you use a custom endpoint.",
       "default": "https://api.deepseek.com/anthropic",
-      "required": true
+      "required": false
     },
     "deepseek_api_key": {
       "type": "string",
       "title": "DeepSeek API Key",
       "description": "DEEPSEEK_API_KEY. Sent only to DeepSeek as Authorization: Bearer ...",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "moonshot_base_url": {
       "type": "string",
       "title": "Moonshot Base URL",
-      "description": "Moonshot/Kimi-compatible API base URL.",
+      "description": "Optional Moonshot/Kimi-compatible API base URL. Leave unchanged unless you use a custom endpoint.",
       "default": "https://api.moonshot.cn/anthropic",
-      "required": true
+      "required": false
     },
     "moonshot_api_key": {
       "type": "string",
       "title": "Moonshot API Key",
       "description": "MOONSHOT_API_KEY. Sent only to Moonshot/Kimi as Authorization: Bearer ...",
       "sensitive": true,
-      "required": true
+      "required": false
+    },
+    "claude_model_map": {
+      "type": "string",
+      "title": "Claude Model Map",
+      "description": "JSON mapping from Claude semantic aliases to real upstream model names. Configure this when you only use one provider, for example map claude-sonnet to kimi-k2.6 for Moonshot-only setups.",
+      "default": "{\"claude-haiku\":\"deepseek-v4-flash\",\"claude-sonnet\":\"deepseek-v4-pro\",\"claude-opus\":\"deepseek-v4-pro\"}",
+      "required": false
     },
     "advanced_env": {
       "type": "string",

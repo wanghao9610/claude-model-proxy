@@ -3,40 +3,47 @@
 [中文文档](README.zh-CN.md)
 
 Claude Desktop can point its gateway at this proxy while requests are routed by
-model name to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini, Qwen,
-or Anthropic upstreams. The default mappings are:
+real model name to DeepSeek, Moonshot/Kimi, GLM, Xiaomi MiMo, OpenAI, Gemini,
+Qwen, or Anthropic upstreams. The default model list exposes real upstream model
+names:
 
-| Claude model | Upstream provider | Upstream model |
+| Request model | Upstream provider | Upstream model |
 | --- | --- | --- |
 | `claude-haiku-4-5` | Anthropic | `claude-haiku-4-5` |
 | `claude-sonnet-4-6` | Anthropic | `claude-sonnet-4-6` |
 | `claude-opus-4-7` | Anthropic | `claude-opus-4-7` |
-| `claude-deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
-| `claude-deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
-| `claude-kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
-| `claude-glm-4.5-air` | GLM | `glm-4.5-air` |
-| `claude-glm-4.7` | GLM | `glm-4.7` |
-| `claude-glm-5.1` | GLM | `glm-5.1` |
-| `claude-mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
-| `claude-mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
-| `claude-mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
-| `claude-qwen-flash` | Qwen | `qwen-flash` |
-| `claude-qwen-plus` | Qwen | `qwen-plus` |
-| `claude-qwen-max` | Qwen | `qwen-max` |
-| `claude-gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
-| `claude-gpt-5.4` | OpenAI | `gpt-5.4` |
-| `claude-gpt-5.5` | OpenAI | `gpt-5.5` |
-| `claude-gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
-| `claude-gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
-| `claude-gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
+| `deepseek-v4-flash` | DeepSeek | `deepseek-v4-flash` |
+| `deepseek-v4-pro` | DeepSeek | `deepseek-v4-pro` |
+| `kimi-k2.6` | Moonshot/Kimi | `kimi-k2.6` |
+| `glm-4.5-air` | GLM | `glm-4.5-air` |
+| `glm-4.7` | GLM | `glm-4.7` |
+| `glm-5.1` | GLM | `glm-5.1` |
+| `mimo-v2-flash` | Xiaomi MiMo | `mimo-v2-flash` |
+| `mimo-v2-pro` | Xiaomi MiMo | `mimo-v2-pro` |
+| `mimo-v2.5-pro` | Xiaomi MiMo | `mimo-v2.5-pro` |
+| `qwen-flash` | Qwen | `qwen-flash` |
+| `qwen-plus` | Qwen | `qwen-plus` |
+| `qwen-max` | Qwen | `qwen-max` |
+| `gpt-5.4-mini` | OpenAI | `gpt-5.4-mini` |
+| `gpt-5.4` | OpenAI | `gpt-5.4` |
+| `gpt-5.5` | OpenAI | `gpt-5.5` |
+| `gemini-3.1-flash-lite-preview` | Gemini | `gemini-3.1-flash-lite-preview` |
+| `gemini-3-flash-preview` | Gemini | `gemini-3-flash-preview` |
+| `gemini-3.1-pro-preview` | Gemini | `gemini-3.1-pro-preview` |
 
-The `Claude model` value is both the request model and the default response
-alias. When multiple request aliases share one upstream model, responses are
-rewritten back to the request alias used for that call. Provider aliases use
-`claude-` plus the actual upstream model name. The original
-Claude model names `claude-haiku-4-5`, `claude-sonnet-4-6`, and
-`claude-opus-4-7` are sent to the Anthropic provider directly. OpenAI, Gemini,
-and Qwen models are not supported by the Anthropic provider.
+Claude semantic aliases are configured separately so newer Claude clients do
+not need fake provider-prefixed Claude aliases:
+
+| Claude alias | Default upstream model |
+| --- | --- |
+| `claude-haiku` | `deepseek-v4-flash` |
+| `claude-sonnet` | `deepseek-v4-pro` |
+| `claude-opus` | `deepseek-v4-pro` |
+
+When a request uses one of these aliases, the proxy sends the mapped real model
+to the upstream provider and rewrites the response model back to the alias used
+for that call. OpenAI, Gemini, and Qwen models are adapted through their
+OpenAI-compatible Chat Completions APIs.
 
 ## Requirements
 
@@ -125,10 +132,13 @@ Environment variables:
 - `OPENAI_API_KEY`: OpenAI API key.
 - `GEMINI_API_KEY`: Gemini API key. `GOOGLE_API_KEY` is also accepted.
 - `QWEN_API_KEY`: Qwen/DashScope API key (or `DASHSCOPE_API_KEY`).
+- `CLAUDE_MODEL_MAP`: Claude semantic alias -> real upstream model name. JSON
+  object or `from=to,from2=to2`. Default:
+  `{"claude-haiku":"deepseek-v4-flash","claude-sonnet":"deepseek-v4-pro","claude-opus":"deepseek-v4-pro"}`.
 - `MODEL_MAP`: request model name -> upstream model name. JSON object or
   `from=to,from2=to2`.
-- `MODEL_ALIASES`: upstream model name -> Claude response alias. JSON object or
-  `from=to,from2=to2`.
+- `MODEL_ALIASES`: upstream model name -> response model alias. JSON object or
+  `from=to,from2=to2`. Defaults to real model names.
 - `MODEL_ROUTES`: upstream model name -> provider name. Provider names are
   `deepseek`, `moonshot`, `glm`, `xiaomi`, `openai`, `gemini`, `qwen`, and
   `anthropic`.
@@ -137,8 +147,8 @@ Environment variables:
 Default mapping values:
 
 ```sh
-MODEL_MAP='{"claude-deepseek-v4-flash":"deepseek-v4-flash","claude-deepseek-v4-pro":"deepseek-v4-pro","claude-kimi-k2.6":"kimi-k2.6","claude-glm-4.5-air":"glm-4.5-air","claude-glm-4.6":"glm-4.6","claude-glm-4.7":"glm-4.7","claude-glm-5":"glm-5","claude-glm-5.1":"glm-5.1","claude-mimo-v2-flash":"mimo-v2-flash","claude-mimo-v2-pro":"mimo-v2-pro","claude-mimo-v2.5-pro":"mimo-v2.5-pro","claude-mimo-v2-omni":"mimo-v2-omni","claude-gpt-5.5":"gpt-5.5","claude-gpt-5.4":"gpt-5.4","claude-gpt-5.4-mini":"gpt-5.4-mini","claude-gemini-3.1-pro-preview":"gemini-3.1-pro-preview","claude-gemini-3-flash-preview":"gemini-3-flash-preview","claude-gemini-2.5-pro":"gemini-2.5-pro","claude-gemini-2.5-flash":"gemini-2.5-flash","claude-gemini-3.1-flash-lite-preview":"gemini-3.1-flash-lite-preview","claude-gemini-2.0-flash":"gemini-2.0-flash","claude-qwen-flash":"qwen-flash","claude-qwen-plus":"qwen-plus","claude-qwen-max":"qwen-max","claude-haiku-4-5":"claude-haiku-4-5","claude-sonnet-4-6":"claude-sonnet-4-6","claude-opus-4-7":"claude-opus-4-7","claude-sonnet-4-5":"claude-sonnet-4-5","claude-opus-4-1":"claude-opus-4-1"}'
-MODEL_ALIASES='{"deepseek-v4-flash":"claude-deepseek-v4-flash","deepseek-v4-pro":"claude-deepseek-v4-pro","kimi-k2.6":"claude-kimi-k2.6","glm-4.5-air":"claude-glm-4.5-air","glm-4.6":"claude-glm-4.6","glm-4.7":"claude-glm-4.7","glm-5":"claude-glm-5","glm-5.1":"claude-glm-5.1","mimo-v2-flash":"claude-mimo-v2-flash","mimo-v2-pro":"claude-mimo-v2-pro","mimo-v2.5-pro":"claude-mimo-v2.5-pro","mimo-v2-omni":"claude-mimo-v2-omni","gpt-5.5":"claude-gpt-5.5","gpt-5.4":"claude-gpt-5.4","gpt-5.4-mini":"claude-gpt-5.4-mini","gemini-3.1-flash-lite-preview":"claude-gemini-3.1-flash-lite-preview","gemini-3-flash-preview":"claude-gemini-3-flash-preview","gemini-3.1-pro-preview":"claude-gemini-3.1-pro-preview","gemini-2.5-pro":"claude-gemini-2.5-pro","gemini-2.5-flash":"claude-gemini-2.5-flash","gemini-2.0-flash":"claude-gemini-2.0-flash","qwen-flash":"claude-qwen-flash","qwen-plus":"claude-qwen-plus","qwen-max":"claude-qwen-max","claude-haiku-4-5":"claude-haiku-4-5","claude-sonnet-4-6":"claude-sonnet-4-6","claude-opus-4-7":"claude-opus-4-7","claude-sonnet-4-5":"claude-sonnet-4-5","claude-opus-4-1":"claude-opus-4-1"}'
+CLAUDE_MODEL_MAP='{"claude-haiku":"deepseek-v4-flash","claude-sonnet":"deepseek-v4-pro","claude-opus":"deepseek-v4-pro"}'
+MODEL_MAP='{"deepseek-v4-flash":"deepseek-v4-flash","deepseek-v4-pro":"deepseek-v4-pro","kimi-k2.6":"kimi-k2.6","glm-4.5-air":"glm-4.5-air","glm-4.6":"glm-4.6","glm-4.7":"glm-4.7","glm-5":"glm-5","glm-5.1":"glm-5.1","mimo-v2-flash":"mimo-v2-flash","mimo-v2-pro":"mimo-v2-pro","mimo-v2.5-pro":"mimo-v2.5-pro","mimo-v2-omni":"mimo-v2-omni","gpt-5.5":"gpt-5.5","gpt-5.4":"gpt-5.4","gpt-5.4-mini":"gpt-5.4-mini","gemini-3.1-pro-preview":"gemini-3.1-pro-preview","gemini-3-flash-preview":"gemini-3-flash-preview","gemini-2.5-pro":"gemini-2.5-pro","gemini-2.5-flash":"gemini-2.5-flash","gemini-3.1-flash-lite-preview":"gemini-3.1-flash-lite-preview","gemini-2.0-flash":"gemini-2.0-flash","qwen-flash":"qwen-flash","qwen-plus":"qwen-plus","qwen-max":"qwen-max","claude-haiku-4-5":"claude-haiku-4-5","claude-sonnet-4-6":"claude-sonnet-4-6","claude-opus-4-7":"claude-opus-4-7","claude-sonnet-4-5":"claude-sonnet-4-5","claude-opus-4-1":"claude-opus-4-1"}'
 MODEL_ROUTES='{"deepseek-v4-flash":"deepseek","deepseek-v4-pro":"deepseek","kimi-k2.6":"moonshot","glm-4.5-air":"glm","glm-4.6":"glm","glm-4.7":"glm","glm-5":"glm","glm-5.1":"glm","mimo-v2-flash":"xiaomi","mimo-v2-pro":"xiaomi","mimo-v2.5-pro":"xiaomi","mimo-v2-omni":"xiaomi","gpt-5.5":"openai","gpt-5.4":"openai","gpt-5.4-mini":"openai","gemini-3.1-pro-preview":"gemini","gemini-3-flash-preview":"gemini","gemini-2.5-pro":"gemini","gemini-2.5-flash":"gemini","gemini-3.1-flash-lite-preview":"gemini","gemini-2.0-flash":"gemini","qwen-flash":"qwen","qwen-plus":"qwen","qwen-max":"qwen","claude-haiku-4-5":"anthropic","claude-sonnet-4-6":"anthropic","claude-opus-4-7":"anthropic","claude-sonnet-4-5":"anthropic","claude-opus-4-1":"anthropic"}'
 ```
 
@@ -166,10 +176,10 @@ claude
 The default Claude Code example maps its aliases to these proxy models:
 
 ```sh
-ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-deepseek-v4-flash
-ANTHROPIC_DEFAULT_SONNET_MODEL=claude-deepseek-v4-pro
-ANTHROPIC_DEFAULT_OPUS_MODEL=claude-kimi-k2.6
-CLAUDE_CODE_SUBAGENT_MODEL=claude-deepseek-v4-flash
+ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku
+ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet
+ANTHROPIC_DEFAULT_OPUS_MODEL=claude-opus
+CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku
 ANTHROPIC_MODEL=sonnet
 ```
 
@@ -178,7 +188,7 @@ You can also start Claude Code with a specific proxy model directly:
 ```sh
 ANTHROPIC_BASE_URL=http://127.0.0.1:8787 \
 ANTHROPIC_API_KEY=dummy-claude-model-proxy \
-claude --model claude-deepseek-v4-pro
+claude --model deepseek-v4-pro
 ```
 
 `ANTHROPIC_API_KEY` is only a non-empty client-side placeholder for this proxy.
@@ -202,14 +212,45 @@ npm run build:mcpb
 The output is:
 
 ```text
-dist/claude-model-proxy-0.1.0.mcpb
+dist/claude-model-proxy-0.1.1.mcpb
 ```
 
 Install it in Claude Desktop from Settings -> Extensions / Connectors ->
 Advanced settings -> Install Extension. During first installation, fill in the
-gateway URL, local port, DeepSeek credentials, and Moonshot/Kimi credentials.
-Optional providers and mapping overrides can be supplied through the advanced
-JSON field.
+gateway URL, local port, whichever provider API key you use, and the Claude
+Model Map if you want aliases to point somewhere else. DeepSeek and
+Moonshot/Kimi Base URL fields are optional because the extension already
+provides the official defaults; only change them when you use a custom endpoint.
+Optional providers and lower-level overrides can be supplied through the
+advanced JSON field.
+
+For a single-provider setup, leave every other provider key blank. For example,
+if you only use Moonshot/Kimi, fill `Moonshot API Key`, leave `DeepSeek API Key`
+blank, and set `Claude Model Map` so Claude semantic aliases resolve to
+Moonshot models:
+
+```json
+{
+  "claude-haiku": "kimi-k2.6",
+  "claude-sonnet": "kimi-k2.6",
+  "claude-opus": "kimi-k2.6"
+}
+```
+
+If you only use DeepSeek, fill `DeepSeek API Key`, leave `Moonshot API Key`
+blank, and keep or adjust the default map:
+
+```json
+{
+  "claude-haiku": "deepseek-v4-flash",
+  "claude-sonnet": "deepseek-v4-pro",
+  "claude-opus": "deepseek-v4-pro"
+}
+```
+
+The same rule applies to providers configured through
+`Optional Advanced Settings JSON`: provide only that provider's key and map the
+Claude aliases to real model names served by that provider.
 
 After the extension is installed, open Claude Desktop settings and configure
 third-party inference as shown below. If the third-party inference or extension
@@ -224,10 +265,9 @@ Use these values:
 - Gateway API key: any non-empty placeholder, for example
   `dummy-claude-model-proxy`
 - Gateway auth scheme: `bearer`
-- Model list: add the Claude-style request model names you want to expose, such
-  as `claude-deepseek-v4-flash`, `claude-deepseek-v4-pro`, and
-  `claude-kimi-k2.6`, `claude-qwen-flash`, `claude-qwen-plus`, or
-  `claude-qwen-max`
+- Model list: add the real model names you want to expose, such as
+  `deepseek-v4-flash`, `deepseek-v4-pro`, `kimi-k2.6`, `qwen-flash`,
+  `qwen-plus`, or `qwen-max`
 
 Provider API keys are configured in the extension installer or environment
 variables, not in the Gateway API key field.
@@ -303,9 +343,10 @@ npm run launch-agent:uninstall
 
 ## Extension install UI
 
-The MCPB installer shows only the gateway/proxy basics plus DeepSeek and
-Moonshot/Kimi credentials by default. Less common provider credentials and
-mapping overrides stay available through one optional advanced JSON field:
+The MCPB installer shows the gateway/proxy basics, optional DeepSeek and
+Moonshot/Kimi credentials, and the Claude Model Map by default. Less common
+provider credentials and low-level mapping overrides stay available through one
+optional advanced JSON field:
 
 ```json
 {
@@ -319,7 +360,8 @@ mapping overrides stay available through one optional advanced JSON field:
 ```
 
 The advanced field accepts any environment variable listed below, including
-`MODEL_MAP`, `MODEL_ALIASES`, `MODEL_ROUTES`, and `REWRITE_RESPONSES`.
+`CLAUDE_MODEL_MAP`, `MODEL_MAP`, `MODEL_ALIASES`, `MODEL_ROUTES`, and
+`REWRITE_RESPONSES`.
 
 ## Project layout
 

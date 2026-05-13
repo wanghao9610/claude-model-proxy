@@ -14,6 +14,7 @@ const outputFile = path.join(distDir, `${packageJson.name}-${packageJson.version
 await fs.rm(stagingDir, { recursive: true, force: true });
 await fs.rm(path.join(distDir, 'claude-deepseek-model-proxy'), { recursive: true, force: true });
 await fs.rm(path.join(distDir, 'claude-deepseek-model-proxy-0.1.0.mcpb'), { force: true });
+await removeOldPackages(distDir, packageJson.name);
 await fs.mkdir(path.join(stagingDir, 'server'), { recursive: true });
 await fs.mkdir(path.join(stagingDir, 'scripts'), { recursive: true });
 await fs.mkdir(path.join(stagingDir, 'srcs'), { recursive: true });
@@ -50,4 +51,22 @@ console.log(outputFile);
 
 async function copyFile(from, to) {
   await fs.copyFile(path.join(rootDir, from), path.join(stagingDir, to));
+}
+
+async function removeOldPackages(directory, packageName) {
+  let entries;
+  try {
+    entries = await fs.readdir(directory);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return;
+    }
+    throw error;
+  }
+
+  await Promise.all(
+    entries
+      .filter((entry) => entry.startsWith(`${packageName}-`) && entry.endsWith('.mcpb'))
+      .map((entry) => fs.rm(path.join(directory, entry), { force: true })),
+  );
 }
